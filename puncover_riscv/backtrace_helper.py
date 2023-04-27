@@ -1,5 +1,5 @@
 import re
-from puncover import collector
+from puncover_riscv import collector
 
 class BacktraceHelper():
 

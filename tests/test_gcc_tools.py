@@ -2,7 +2,7 @@ import unittest
 
 from mock import patch
 
-from puncover.gcc_tools import GCCTools
+from puncover_riscv.gcc_tools import GCCTools
 
 
 class TestGCCTools(unittest.TestCase):

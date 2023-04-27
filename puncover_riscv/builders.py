@@ -1,7 +1,7 @@
 import abc
 import os
 from os.path import dirname
-from puncover.backtrace_helper import BacktraceHelper
+from puncover_riscv.backtrace_helper import BacktraceHelper
 
 
 class Builder:
@@ -20,12 +20,13 @@ class Builder:
             self.store_file_time(f)
         self.collector.reset()
         self.collector.parse_elf(self.get_elf_path())
+        self.collector.parse_su(self.get_su_dir())
+        self.collector.parse_map(self.get_map_path())
         self.collector.enhance(self.src_root)
-        self.collector.parse_su_dir(self.get_su_dir())
         self.build_call_trees()
 
     def needs_build(self):
-        return any([os.path.getmtime(f) > t for f,t in self.files.items()])
+        return any([os.path.getmtime(f) > t for f, t in self.files.items()])
 
     def build_if_needed(self):
         if self.needs_build():
@@ -33,6 +34,10 @@ class Builder:
 
     @abc.abstractmethod
     def get_elf_path(self):
+        pass
+
+    @abc.abstractmethod
+    def get_map_path(self):
         pass
 
     @abc.abstractmethod
@@ -47,14 +52,19 @@ class Builder:
 
 class ElfBuilder(Builder):
 
-    def __init__(self, collector, src_root, elf_file, su_dir):
-        Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
+    def __init__(self, collector, src_root, elf_file, map_file, su_dir):
+        Builder.__init__(
+            self, collector, src_root if src_root else dirname(dirname(elf_file)))
         self.store_file_time(elf_file, store_empty=True)
         self.elf_file = elf_file
+        self.map_file = map_file
         self.su_dir = su_dir
 
     def get_elf_path(self):
         return self.elf_file
+    
+    def get_map_path(self):
+        return self.map_file
 
     def get_su_dir(self):
         return self.su_dir

@@ -2,7 +2,7 @@ import unittest
 
 from mock.mock import Mock, patch
 from flask import globals
-from puncover import renderers
+from puncover_riscv import renderers
 
 
 class TestRenderer(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestRenderer(unittest.TestCase):
     def setUp(self):
         self.request = Mock(name='request')
         self.request.args = {}
-        self.request.base_url = 'http://puncover.com'
+        self.request.base_url = 'http://puncover_riscv.com'
         self.request.blueprint = None
 
         def url_adapter_func(url, *args, **kwargs):
@@ -131,7 +131,7 @@ class TestRenderer(unittest.TestCase):
         ctx.parent = {}
         self.request.args = {'foo': 'bar'}
 
-        expected = '<a href="http://puncover.com?foo=bar&sort=name_asc" class="sortable">Name</a>'
+        expected = '<a href="http://puncover_riscv.com?foo=bar&sort=name_asc" class="sortable">Name</a>'
         actual = renderers.col_sortable_filter(ctx, 'Name', True)
         self.assertEqual(expected, actual)
 
@@ -139,7 +139,7 @@ class TestRenderer(unittest.TestCase):
         # mark as sorted ascending and populate link for descending
         ctx.parent = {'sort': 'name_asc'}
         self.request.args = {'sort': 'foo'}
-        expected = '<a href="http://puncover.com?sort=name_desc" class="sortable sort_asc_alpha">Name</a>'
+        expected = '<a href="http://puncover_riscv.com?sort=name_desc" class="sortable sort_asc_alpha">Name</a>'
         actual = renderers.col_sortable_filter(ctx, 'Name', True)
         self.assertEqual(expected, actual)
 
@@ -148,7 +148,7 @@ class TestRenderer(unittest.TestCase):
         ctx.parent = {}
         self.request.args = {'foo': 'bar'}
 
-        expected = '<a href="http://puncover.com?foo=bar&sort=stack_asc" class="sortable">Stack</a>'
+        expected = '<a href="http://puncover_riscv.com?foo=bar&sort=stack_asc" class="sortable">Stack</a>'
         actual = renderers.col_sortable_filter(ctx, 'Stack', True)
         self.assertEqual(expected, actual)
 
@@ -156,7 +156,7 @@ class TestRenderer(unittest.TestCase):
         # mark as sorted ascending and populate link for descending
         ctx.parent = {'sort': 'stack_asc'}
         self.request.args = {'sort': 'foo'}
-        expected = '<a href="http://puncover.com?sort=stack_desc" class="sortable sort_asc_alpha">Stack</a>'
+        expected = '<a href="http://puncover_riscv.com?sort=stack_desc" class="sortable sort_asc_alpha">Stack</a>'
         actual = renderers.col_sortable_filter(ctx, 'Stack', True)
         self.assertEqual(expected, actual)
 

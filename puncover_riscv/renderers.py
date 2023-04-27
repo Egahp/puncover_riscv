@@ -15,8 +15,8 @@ from flask.helpers import url_for
 from flask.views import View
 from werkzeug.urls import Href
 
-from puncover import collector
-from puncover.backtrace_helper import BacktraceHelper
+from puncover_riscv import collector
+from puncover_riscv.backtrace_helper import BacktraceHelper
 
 KEY_OUTPUT_FILE_NAME = "output_file_name"
 
@@ -82,6 +82,8 @@ def symbol_stack_size_filter(context, value, stack_base=None):
     if isinstance(stack_base, str):
         stack_base = None
     result = traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
+    if result == "":
+        result = None
     return none_sum(result, stack_base)
 
 @jinja2.pass_context

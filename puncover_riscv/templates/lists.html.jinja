@@ -27,7 +27,7 @@
     <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
-                <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
+                <th width="40%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 <th class="col_size">{{ 'Code' | col_sortable }}</th>
                 <th class="col_size">{{ 'Static' | col_sortable(False, 'vars') }}</th>
@@ -43,7 +43,10 @@
                         &nbsp;{{ folder.name | e}}
                     </a>
                 </td>
-                <td>{% if folder.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
+                <td>{% if folder.call_heap %}<span class="label label-warning">call heap</span>{% endif %}
+                    {% if folder.call_hard_float %}<span class="label label-warning">call hard float</span>{% endif %}
+                    {% if folder.call_soft_float %}<span class="label label-warning">call soft float</span>{% endif %}
+                </td>
                 <td class="col_size" style="{{ folder | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
                     {{ folder | symbol_code_size | bytes }}
                 </td>
@@ -70,7 +73,10 @@
                         &nbsp;{{ file.name | e}}
                     </a>
                 </td>
-                <td>{% if file.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
+                <td>{% if file.call_heap %}<span class="label label-warning">call heap</span>{% endif %}
+                    {% if file.call_hard_float %}<span class="label label-warning">call hard float</span>{% endif %}
+                    {% if file.call_soft_float %}<span class="label label-warning">call soft float</span>{% endif %}
+                </td>
                 <td class="col_size" style="{{ file | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
                     {{ file | symbol_code_size | bytes}}
                 </td>
@@ -103,15 +109,20 @@
 {%- endmacro %}
 
 {% macro symbol_remarks(symbol) %}
-    {% if symbol.called_from_other_file %}<span class="label label-success">x-module</span>{% endif %}
-    {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
+    {% if symbol.local %}<span class="label label-primary">local</span>{% endif %}
+    {% if symbol.is_libc %}<span class="label label-success">libc</span>{% endif %}
+    {% if symbol.is_libc_softfp %}<span class="label label-success">soft-float</span>{% endif %}
+    {% if symbol.is_heap %}<span class="label label-success">heap</span>{% endif %}
+    {% if symbol.call_heap %}<span class="label label-warning">call heap</span>{% endif %}
+    {% if symbol.call_hard_float %}<span class="label label-warning">call hard float</span>{% endif %}
+    {% if symbol.call_soft_float %}<span class="label label-warning">call soft float</span>{% endif %}
 {% endmacro %}
 
 {% macro symbols(functions, variables) -%}
     <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
-                <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
+                <th width="40%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 <th class="col_size">{{ 'Stack' | col_sortable(true) }}</th>
                 <th class="col_size">{{ 'Code' | col_sortable(true) }}</th>
@@ -147,12 +158,16 @@
 {# static vars #}
             {% for var in variables | sorted %}
              <tr>
-                <td colspan="4"><span class="icon-variable">{{ var.display_name |e }}</span></td>
+                <td><span class="icon-variable">{{ var.display_name |e }}</span></td>
+                <td>{{ symbol_remarks(var) }}</td>
+                <td class="col_size"></td>
+                <td class="col_size"></td>
                 <td class="col_size" style="{{ var | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
                     {{ var | symbol_var_size | bytes }}
                 </td>
             </tr>
             {% endfor %}
+
         {% if variables | length > 1 and functions | length > 0 %}
             <tr>
                 <th colspan="4">&sum; {{ variables | length }} variables</th>
@@ -198,13 +213,13 @@
             <tr>
                 <th>{{ loop.index }}</th>
                 <td class="col_size">{% if stack_base or not loop.last %}
-                    {% if function.stack_size  %}
+                    {% if function.stack_size is defined  %}
                     {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
                 <td class="col_size">
-            {% if function.stack_size %}
+            {% if function.stack_size is defined %}
                 {{ function.stack_size | bytes }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
             {% endif %}
                 </td>

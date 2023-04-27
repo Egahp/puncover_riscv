@@ -1,7 +1,7 @@
 import unittest
-from puncover.collector import Collector, left_strip_from_list
+from puncover_riscv.collector import Collector, left_strip_from_list
 from mock import patch
-from puncover import collector
+from puncover_riscv import collector
 
 
 class TestCollector(unittest.TestCase):
@@ -14,21 +14,21 @@ class TestCollector(unittest.TestCase):
 
     def test_parses_function_line(self):
         c = Collector(None)
-        line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
+        line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover_riscv/puncover_riscv/build/../src/puncover_riscv.c:25"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+        self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover_riscv.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover_riscv/puncover_riscv/build/../src/puncover_riscv.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector(None)
-        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
+        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/puncover_riscv.c:15"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover_riscv.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/puncover_riscv.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
         c = Collector(None)
-        line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
+        line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/../src/puncover_riscv.c:17"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover_riscv.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/../src/puncover_riscv.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector(None)
@@ -44,20 +44,22 @@ class TestCollector(unittest.TestCase):
 
     def test_parses_assembly(self):
         assembly = """
-00000098 <pbl_table_addr>:
-pbl_table_addr():
-  98:	a8a8a8a8 	.word	0xa8a8a8a8
+a0003df8 <main>:
+main():
+/home/egahp/examples/helloworld/main.c:8
+a0003df8:	7179                	addi	sp,sp,-48
 
-0000009c <__aeabi_dmul>:
-__aeabi_dmul():
-  9c:	b570      	push	{r4, r5, r6, lr}
+a0003e80 <memset>:
+memset():
+/home/egahp/components/libc/nuttx/libc/string/lib_memset.c:167
+a0003e80:	0ff5f593          	andi	a1,a1,255
 """
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(0x0000009c in c.symbols)
-        self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
-        self.assertTrue(0x00000098 in c.symbols)
-        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
+        self.assertTrue(0xa0003e80 in c.symbols)
+        self.assertEqual(c.symbols[0xa0003e80]["name"], "memset")
+        self.assertTrue(0xa0003df8 in c.symbols)
+        self.assertEqual(c.symbols[0xa0003df8]["name"], "main")
 
     def test_parses_assembly2(self):
         assembly = """
@@ -118,21 +120,20 @@ $d():
         # print "\n".join(c.symbols["000034fc"]["asm"])
         self.assertEqual(len(c.symbols[0x000034fc]["asm"]), 8)
 
-
     def test_enhances_assembly(self):
         assembly = """
-00000098 <pbl_table_addr>:
-pbl_table_addr():
- 568:	f7ff ffca 	bl	98
+a0003ebc <out_rev_>:
+out_rev_():
+a0004074:	35a1                	jal	a0003ebc
 """
         c = Collector(None)
         self.assertEqual(1, c.parse_assembly_text(assembly))
-        self.assertTrue(0x00000098 in c.symbols)
-        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
-        self.assertEqual(c.symbols[0x00000098]["asm"][1], " 568:\tf7ff ffca \tbl\t98")
+        self.assertTrue(0xa0003ebc in c.symbols)
+        self.assertEqual(c.symbols[0xa0003ebc]["name"], "out_rev_")
+        self.assertEqual(c.symbols[0xa0003ebc]["asm"][1], "a0004074:	35a1                	jal	a0003ebc")
 
         c.enhance_assembly()
-        self.assertEqual(c.symbols[0x00000098]["asm"][1], " 568:\tf7ff ffca \tbl\t98 <pbl_table_addr>")
+        self.assertEqual(c.symbols[0xa0003ebc]["asm"][1], "a0004074:	35a1                	jal	a0003ebc <out_rev_>")
 
     def test_enhances_caller(self):
         assembly = """
@@ -141,6 +142,13 @@ pbl_table_addr():
 
 00000930 <app_log>:
 $t():
+        """
+        assembly = """
+00000098 <pbl_table_addr>:
+000008e4:	215020ef          	jal	ra,00000930 <board_init>
+
+00000930 <board_init>:
+board_init():
         """
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
@@ -161,53 +169,56 @@ $t():
         self.assertEqual(pbl_table_addr["callees"], [app_log])
         self.assertEqual(app_log["callers"], [pbl_table_addr])
         self.assertEqual(app_log["callees"], [])
+        
 
 
     def test_enhance_call_tree_from_assembly_line(self):
         c = Collector(None)
         f1 = "f1"
-        f2 = {collector.ADDRESS: "00000088"}
-        f3 = {collector.ADDRESS: "00000930"}
+        f2 = {collector.ADDRESS: "a0005736"}
+        f3 = {collector.ADDRESS: "a000307e"}
         c.symbols = {int(f2[collector.ADDRESS], 16): f2, int(f3[collector.ADDRESS], 16): f3}
 
         with patch.object(c, "add_function_call") as m:
-            c.enhance_call_tree_from_assembly_line(f1, " 89e:	e9d3 0100 	ldrd	r0, r1, [r3]")
+            c.enhance_call_tree_from_assembly_line(f1, "a000672a:	4592                	lw	a1,4(sp)")
             self.assertFalse(m.called)
         with patch.object(c, "add_function_call") as m:
-            c.enhance_call_tree_from_assembly_line(f1, "934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>")
+            c.enhance_call_tree_from_assembly_line(f1, "a0006ac4:	c73fe0ef          	jal	ra,a0005736 <printf>")
             m.assert_called_with(f1,f2)
         with patch.object(c, "add_function_call") as m:
-            c.enhance_call_tree_from_assembly_line(f1, "8e4:	f000 f824 	bl	930 <app_log>")
+            c.enhance_call_tree_from_assembly_line(f1, "a0003078:	00091363          	bnez s2,a000307e <__muldf3+0x56c>")
             m.assert_called_with(f1,f3)
 
         with patch.object(c, "add_function_call") as m:
-            c.enhance_call_tree_from_assembly_line(f1, "6c6:	d202      	bcs.n	88 <__aeabi_ddiv+0x6e>")
+            c.enhance_call_tree_from_assembly_line(f1, "a0005c78:	12b7e463          	bltu	a5,a1,a0005736 <printf>")
             m.assert_called_with(f1,f2)
 
         with patch.object(c, "add_function_call") as m:
-            c.enhance_call_tree_from_assembly_line(f1, " 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...")
+            c.enhance_call_tree_from_assembly_line(f1, " 25a00 01000ed6 14120001 2e035600 00004ded  ..........V...M.")
             self.assertFalse(m.called)
-
+        
 
     def test_stack_usage_line(self):
-        line = "puncover.c:14:40:0	16	dynamic,bounded"
+        line = "/home/egahp/drivers/lhal/config/bl616/device_table.c:321:6:bflb_device_set_userdata	24	static"
+        
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "puncover.c",
-            "line": 14,
+            "base_file": "device_table.c",
+            "line": 321,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
-        self.assertEqual(16, c.symbols["123"]["stack_size"])
-        self.assertEqual("dynamic,bounded", c.symbols["123"]["stack_qualifiers"])
+        self.assertEqual(24, c.symbols["123"]["stack_size"])
+        self.assertEqual("static", c.symbols["123"]["stack_qualifiers"])
 
     def test_stack_usage_line2(self):
-        line = "puncover.c:8:43:dynamic_stack2	16	dynamic"
+        line = "puncover_riscv.c:8:43:dynamic_stack2	16	dynamic"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "puncover.c",
+            "base_file": "puncover_riscv.c",
             "line": 8,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
+        
 
     def test_stack_usage_line_header(self):
         line = "ILI9341_t3.h:312:15:void ILI9341_t3::updateDisplayClip()	16	static"
@@ -217,6 +228,7 @@ $t():
             "line": 312,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
+        
 
     def test_stack_usage_line_cpp_correct_line(self):
         line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
@@ -307,12 +319,12 @@ $t():
         c.parse_assembly_text("""
 000008a8 <uses_doubles2.constprop.0>:
 uses_doubles2():
-/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:19
+/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/../src/puncover_riscv.c:19
  8a8:	b508      	push	{r3, lr}
          """)
         s = c.symbol_by_addr("8a8")
-        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c", s[collector.PATH])
-        self.assertEqual("puncover.c", s[collector.BASE_FILE])
+        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/../src/puncover_riscv.c", s[collector.PATH])
+        self.assertEqual("puncover_riscv.c", s[collector.BASE_FILE])
         self.assertEqual(19, s[collector.LINE])
 
 
@@ -348,9 +360,9 @@ uses_doubles2():
 
     def test_derive_file_elements(self):
         c = Collector(None)
-        s1 = {collector.PATH: "/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"}
+        s1 = {collector.PATH: "/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/build/../src/puncover_riscv.c"}
         s2 = {collector.PATH: "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"}
-        s3 = {collector.PATH: "src/puncover.c"}
+        s3 = {collector.PATH: "src/puncover_riscv.c"}
         c.symbols = {
             1: s1,
             2: s2,
@@ -358,13 +370,13 @@ uses_doubles2():
         }
 
         c.derive_folders()
-        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c", s1[collector.PATH])
+        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover_riscv/pebble/src/puncover_riscv.c", s1[collector.PATH])
         self.assertIsNotNone(s1[collector.FILE])
 
         self.assertEqual("/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S", s2[collector.PATH])
         self.assertIsNotNone(s2[collector.FILE])
 
-        self.assertEqual("src/puncover.c", s3[collector.PATH])
+        self.assertEqual("src/puncover_riscv.c", s3[collector.PATH])
         self.assertIsNotNone(s3[collector.FILE])
 
     def test_derive_file_elements_for_unknown_files(self):
@@ -374,13 +386,13 @@ uses_doubles2():
         self.assertNotIn(collector.PATH, s)
         self.assertNotIn(collector.BASE_FILE, s)
         c.derive_folders()
-        self.assertEqual("<unknown>/<unknown>", s[collector.PATH])
-        self.assertEqual("<unknown>", s[collector.BASE_FILE])
+        self.assertEqual("<libgcc>/<libgcc>", s[collector.PATH])
+        self.assertEqual("<libgcc>", s[collector.BASE_FILE])
         self.assertIn(collector.FILE, s)
         file = s[collector.FILE]
-        self.assertEqual("<unknown>", file[collector.NAME])
+        self.assertEqual("<libgcc>", file[collector.NAME])
         folder = file[collector.FOLDER]
-        self.assertEqual("<unknown>", file[collector.NAME])
+        self.assertEqual("<libgcc>", file[collector.NAME])
 
 
 
@@ -447,3 +459,31 @@ uses_doubles2():
         self.assertListEqual([baa], ba[collector.COLLAPSED_SUB_FOLDERS])
         self.assertListEqual([], baa[collector.COLLAPSED_SUB_FOLDERS])
 
+if __name__ == '__main__':
+    test = TestCollector()
+    test.test_parses_function_line()
+    test.test_parses_variable_line_from_initialized_data_section()
+    test.test_parses_variable_line_from_uninitialized_data_section()
+    test.test_ignores_incomplete_size_line_1()
+    test.test_ignores_incomplete_size_line_2()
+    test.test_parses_assembly()
+    test.test_parses_assembly2()
+    test.test_parses_assembly_and_ignores_c()
+    test.test_parses_assembly_and_stops_after_function()
+    test.test_enhances_assembly()
+    test.test_enhances_caller()
+    test.test_enhance_call_tree_from_assembly_line()
+    test.test_stack_usage_line()
+    test.test_stack_usage_line2()
+    test.test_stack_usage_line_header()
+    test.test_stack_usage_line_cpp_correct_line()
+    test.test_stack_usage_line_cpp_incorrect_line()
+    test.test_stack_usage_line_cpp_constructor()
+    test.test_display_names_match()
+    test.test_count_bytes()
+    test.test_enhance_function_size_from_assembly()
+    test.test_derive_filename_from_assembly()
+    test.test_enhance_sibling_symbols()
+    test.test_derive_file_elements()
+    test.test_derive_file_elements_for_unknown_files()
+    test.test_enhance_file_elements()

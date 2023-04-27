@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         # note: 3.5 + 3.6 are EOL as of 2022-09-16. tests do fail on python3.5,
-        # see https://github.com/HBehrens/puncover/issues/36
+        # see https://github.com/HBehrens/puncover_riscv/issues/36
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
         # it's convenient to stay on an older ubuntu as long as we need
         # python3.6:

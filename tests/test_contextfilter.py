@@ -1,5 +1,5 @@
 import unittest
-from puncover.renderers import traverse_filter_wrapper
+from puncover_riscv.renderers import traverse_filter_wrapper
 
 
 class TestBacktraceHelper(unittest.TestCase):
